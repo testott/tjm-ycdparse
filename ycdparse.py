@@ -1,14 +1,61 @@
-import pandas as pd
+from graphql import GraphQLClient
 from pathlib import Path
+
+import configparser
+import pandas as pd
+import pickle
+import re
 
 print("\n\nWelcome to YCD Parser.\n")
 
-#Get BOM files and YCD files
+# Get API Keys from config file
+print("\nLoading config...")
+config = configparser.ConfigParser()
+# Check if config.ini exists, if not write it
+try:
+  config.read('config.ini')
+  octopart_api_key = config.get('API Keys', 'octopart')
+except:
+  print("Unable to find config file! Generating new config file...")
+  with open('config.ini', 'w') as configfile:
+    config['API Keys'] = {'octopart': '', 'mouser': ''}
+    config.write(configfile)
+  octopart_api_key = config.get('API Keys', 'octopart')
+
+# Check if Octopart API key exists, if not write it
+if not octopart_api_key:
+  octopart_api_key = input("\nCouldn't find Octopart API key! Please input your Octopart API key and hit enter.\n:")
+  config['API Keys']['octopart'] = octopart_api_key
+  with open('config.ini', 'w') as configfile:
+    config.write(configfile)
+  print("API Key saved!")
+else:
+  print("Done.")
+
+# Get reference dictionary of parts
+print("\nLoading part reference dictionary...")
+try:
+  ref_dict = pickle.load(open("ref_dict.p", "rb"))
+except:
+  print("Unable to find part reference dictionary! Generating new file...")
+  ref_dict = {}
+  pickle.dump(ref_dict, open("ref_dict.p", "wb"))
+print("Done.")
+
+# Setup GraphQL Client
+print("\nSetting up API endpoint...")
+gql = GraphQLClient('https://octopart.com/api/v4/endpoint')
+gql.inject_token(octopart_api_key)
+print("Done.")
+
+print("\nLoading complete.")
+
+# Get BOM files and YCD files
 BOM = None
 YCDs = []
 while not BOM or not YCDs:
-  input("\nPlease place YCD files into the 'YCD here' folder, and the BOM file into the 'BOM here' folder and press ENTER to continue.")
-  #Get BOM
+  input("\n\n\nPlease place YCD files into the 'YCD here' folder, and the BOM file into the 'BOM here' folder and press ENTER to continue.")
+  # Get BOM
   try:
     BOM = list(Path('BOM here/').glob('*.xlsx'))[0]
     if not BOM:
@@ -17,7 +64,7 @@ while not BOM or not YCDs:
   except:
     print("\nCouldn't find a BOM file! Please make sure a BOM file is inside the 'BOM here' folder.")
 
-  #Get YCDs
+  # Get YCDs
   try:
     YCDs = list(Path('YCD here/').glob('*.ycd'))
     if not YCDs:
@@ -26,7 +73,7 @@ while not BOM or not YCDs:
   except:
     print("\nCouldn't find a YCD file! Please make sure a YCD file is inside the 'YCD here' folder.")
 
-#Get row that contains headers
+# Get row that contains headers
 head_row = 0
 while not head_row:
   try:
@@ -37,10 +84,11 @@ while not head_row:
   except:
     print("\nThat was an invalid number! Please input the row number and try again.\n")
 
-#Find BOM file and parse with pandas
+# Parse BOM with pandas
+print("\nParsing BOM...")
 bom_df = pd.read_excel(BOM,header = head_row-1).dropna()
 
-#Find relevant columns to put into YCD files
+# Find relevant columns to put into YCD files
 partnum_col = None
 try:
   partnum_col = list(bom_df.columns.str.contains(r'.*part.*num.*', case = False, regex = True)).index(True)
@@ -54,6 +102,7 @@ except:
     except:
       print("\nThat was an invalid number! Please input the column number between 1 and {} and try again.\n".format(len(bom_df.columns)))
     partnum_col -= 1
+partnum_col = bom_df.columns[partnum_col]
 
 desc_col = None
 try:
@@ -68,5 +117,77 @@ except:
     except:
       print("\nThat was an invalid number! Please input the column number between 1 and {} and try again.\n".format(len(bom_df.columns)))
     desc_col -= 1
+desc_col = bom_df.columns[desc_col]
 
-print(partnum_col, desc_col)
+# Ensure part numbers and descriptions are set as strings
+bom_df[partnum_col] = bom_df[partnum_col].astype(str)
+bom_df[desc_col] = bom_df[desc_col].astype(str)
+print('\nBOM parse complete!')
+
+# Parse YCD files with pandas and crosscheck all part numbers and add them to reference dictionary
+print('\nParsing YCD files...')
+
+for ycd in YCDs:
+  ycd_df = pd.read_csv(ycd, delim_whitespace=True, header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
+  # Ensure part numbers and packages are set as strings
+  ycd_df['P/N'] = ycd_df['P/N'].astype(str)
+  ycd_df['Pkg'] = ycd_df['Pkg'].astype(str)
+  # Sort by reference designator
+  ycd_df = ycd_df.sort_values(by = ['RefID.'])
+  
+  # Iterate over each row of YCD file
+  for i, row in ycd_df.iterrows():
+    pn = row['P/N']
+    
+    # Check if part number is in reference dictionary
+    if pn not in ref_dict and pn.lower() not in ['dni', 'dnp']:
+      print("\nLooking up new part number: " + pn)
+      # Lookup on Octopart
+      data = gql.get_part_specs(pn)
+      
+      # Get package, prioritizing Imperial Case Codes over Metric, if it exists
+      pkg = ''
+      for each in data:
+        if not pkg and each['attribute']['name'] == 'Case/Package':
+          pkg = each['display_value'].replace('-',' ')
+        if each['attribute']['name'] == 'Case Code (Imperial)':
+          pkg = each['display_value'].replace('-',' ')
+      
+      # Manually input package name if unable to find one on Octopart
+      if not pkg:
+        print("\nUnable to find case/package info for " + pn +"!")
+        while not pkg:
+          pkg = str(input("\nPlease manually input correct case/package name for " + pn + "\n:"))
+          if not pkg:
+            print("\nPackage name invalid!")
+      
+      # Check if 4 digit case code, then apply C, R, L to the end if the reference designator matches
+      if re.search('^\d\d\d\d$', pkg):
+        if row['RefID.'].lower().startswith(('r','c','l','fb')):
+          if row['RefID.'].lower().startswith('fb'):
+            pkg = pkg + 'L'
+          else:
+            pkg = pkg + row['RefID.'][0]
+      
+      # Save new part to reference dictionary
+      ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
+      pickle.dump(ref_dict, open("ref_dict.p", "wb"))
+      print("\n" + pn + " added to part reference dictionary.")
+    
+    # Check for DNI and add it if it isn't there
+    if pn.lower() in ['dni', 'dnp'] and pn not in ref_dict:
+      ref_dict[pn] = [pn, pn]
+      pickle.dump(ref_dict, open("ref_dict.p", "wb"))
+    
+    # Set new values to row
+    ycd_df.set_value(i,'Extension', ref_dict[pn][0])
+    ycd_df.set_value(i,'Pkg', ref_dict[pn][1])
+  
+  # Write new YCD as tsv file for use with YesTech CAD Utility
+  tsv_path = Path('Output') / Path(str(ycd.stem) + '.tsv')
+  print("\nSaving " + tsv_path.name + " to Output folder...")
+  ycd_df.to_csv(tsv_path, index = False, header = False, sep = '\t')
+  print("\nDone.")
+
+
+print("\n\nProgram complete!")

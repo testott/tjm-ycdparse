@@ -1,6 +1,8 @@
 BOM here/
 Output/
 YCD here/
+config.ini
+ref_dict.p
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
