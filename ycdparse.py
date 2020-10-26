@@ -11,6 +11,7 @@ print("\n\nWelcome to YCD Parser.\n")
 # Get API Keys from config file
 print("\nLoading config...")
 config = configparser.ConfigParser()
+
 # Check if config.ini exists, if not write it
 try:
   config.read('config.ini')
@@ -53,6 +54,15 @@ print("\nLoading complete.")
 # Get BOM files and YCD files
 BOM = None
 YCDs = []
+
+#Check if directories exist
+if not Path('BOM here/').exists():
+  Path('BOM here/').mkdir()
+if not Path('YCD here/').exists():
+  Path('YCD here/').mkdir()
+if not Path('Output/').exists():
+  Path('Output/').mkdir()
+
 while not BOM or not YCDs:
   input("\n\n\nPlease place YCD files into the 'YCD here' folder, and the BOM file into the 'BOM here' folder and press ENTER to continue.")
   # Get BOM
