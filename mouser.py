@@ -1,4 +1,6 @@
+import re
 import requests
+
 from bs4 import BeautifulSoup
 
 class MouserClient:
@@ -18,15 +20,19 @@ class MouserClient:
       raise Exception('POST /mouser/ {}'.format(resp.status_code))
     
     pnurl = resp.json()['SearchResults']['Parts'][0]['ProductDetailUrl']
-    print(pnurl)
-    input()
-    page = requests.get(pnurl)
-    print('getting page')
-    input()
+    page = requests.get(pnurl, headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',})
     soup = BeautifulSoup(page.content, 'html.parser')
-    print('soup made')
-    input()
-    return soup.find(id='SpecList_4__Value')
-
-mouser = MouserClient('ec708a36-a630-47d3-bb78-b4b29108581b')
-print(mouser.get_part_specs('MCKK2012T1R0M'))
+    specs_table = soup.find('table', class_ = 'specs-table')
+    specs = specs_table.find_all('tr')
+    
+    pkg = ''
+    for attr in specs:
+      try:
+        if attr.find('input')['value'] == 'Package / Case:' and not pkg:
+          pkg = attr.find('td', class_ = 'attr-value-col').text.rstrip()
+        if attr.find('input')['value'] == 'Case Code - in:':
+          pkg = attr.find('td', class_ = 'attr-value-col').text.rstrip()
+      except:
+        pass
+    pkg = re.sub('\s*\([\d\w\s]+\)$', '', pkg)
+    return pkg

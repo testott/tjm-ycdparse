@@ -1,4 +1,5 @@
 from graphql import GraphQLClient
+from mouser import MouserClient
 from pathlib import Path
 
 import configparser
@@ -13,20 +14,30 @@ print("\nLoading config...")
 config = configparser.ConfigParser()
 
 # Check if config.ini exists, if not write it
-try:
-  config.read('config.ini')
-  octopart_api_key = config.get('API Keys', 'octopart')
-except:
+if not Path('config.ini').exists():
   print("Unable to find config file! Generating new config file...")
   with open('config.ini', 'w') as configfile:
     config['API Keys'] = {'octopart': '', 'mouser': ''}
     config.write(configfile)
-  octopart_api_key = config.get('API Keys', 'octopart')
+else:
+  config.read('config.ini')
+octopart_api_key = config.get('API Keys', 'octopart')
+mouser_api_key = config.get('API Keys', 'mouser')
 
 # Check if Octopart API key exists, if not write it
 if not octopart_api_key:
   octopart_api_key = input("\nCouldn't find Octopart API key! Please input your Octopart API key and hit enter.\n:")
   config['API Keys']['octopart'] = octopart_api_key
+  with open('config.ini', 'w') as configfile:
+    config.write(configfile)
+  print("API Key saved!")
+else:
+  print("Done.")
+  
+# Check if Mouser API key exists, if not write it
+if not mouser_api_key:
+  mouser_api_key = input("\nCouldn't find Mouser API key! Please input your Octopart API key and hit enter.\n:")
+  config['API Keys']['mouser'] = mouser_api_key
   with open('config.ini', 'w') as configfile:
     config.write(configfile)
   print("API Key saved!")
@@ -44,9 +55,10 @@ except:
 print("Done.")
 
 # Setup GraphQL Client
-print("\nSetting up API endpoint...")
+print("\nSetting up API endpoints...")
 gql = GraphQLClient('https://octopart.com/api/v4/endpoint')
 gql.inject_token(octopart_api_key)
+mouser = MouserClient(mouser_api_key)
 print("Done.")
 
 print("\nLoading complete.")
@@ -163,7 +175,11 @@ for ycd in YCDs:
         if each['attribute']['name'] == 'Case Code (Imperial)':
           pkg = each['display_value'].replace('-',' ')
       
-      # Manually input package name if unable to find one on Octopart
+      # Get package from Mouser if unable to find on Octopart
+      if not pkg:
+        pkg = mouser.get_part_specs(pn)
+      
+      # Manually input package name if unable to find one on Octopart or Mouser
       if not pkg:
         print("\nUnable to find case/package info for " + pn +"!")
         while not pkg:
@@ -182,7 +198,7 @@ for ycd in YCDs:
       # Save new part to reference dictionary
       ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
-      print("\n" + pn + " added to part reference dictionary.")
+      print("\n" + pn + " added to part reference dictionary as " + pkg)
     
     # Check for DNI and add it if it isn't there
     if pn.lower() in ['dni', 'dnp'] and pn not in ref_dict:
