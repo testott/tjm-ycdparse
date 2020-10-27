@@ -29,10 +29,11 @@ class MouserClient:
     for attr in specs:
       try:
         if attr.find('input')['value'] == 'Package / Case:' and not pkg:
-          pkg = attr.find('td', class_ = 'attr-value-col').text.rstrip()
+          pkg = attr.find('td', class_ = 'attr-value-col').text
         if attr.find('input')['value'] == 'Case Code - in:':
-          pkg = attr.find('td', class_ = 'attr-value-col').text.rstrip()
+          pkg = attr.find('td', class_ = 'attr-value-col').text
       except:
         pass
-    pkg = re.sub('\s*\([\d\w\s]+\)$', '', pkg)
+    pkg = re.sub(r'[\s\t\n]*', '', pkg)
+    pkg = re.sub(r'\([\d\w]+\)$', '', pkg)
     return pkg

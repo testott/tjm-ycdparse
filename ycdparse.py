@@ -15,7 +15,7 @@ config = configparser.ConfigParser()
 
 # Check if config.ini exists, if not write it
 if not Path('config.ini').exists():
-  print("Unable to find config file! Generating new config file...")
+  print("\nUnable to find config file! Generating new config file...")
   with open('config.ini', 'w') as configfile:
     config['API Keys'] = {'octopart': '', 'mouser': ''}
     config.write(configfile)
@@ -26,13 +26,11 @@ mouser_api_key = config.get('API Keys', 'mouser')
 
 # Check if Octopart API key exists, if not write it
 if not octopart_api_key:
-  octopart_api_key = input("\nCouldn't find Octopart API key! Please input your Octopart API key and hit enter.\n:")
+  octopart_api_key = input("Couldn't find Octopart API key! Please input your Octopart API key and hit enter.\n:")
   config['API Keys']['octopart'] = octopart_api_key
   with open('config.ini', 'w') as configfile:
     config.write(configfile)
   print("API Key saved!")
-else:
-  print("Done.")
   
 # Check if Mouser API key exists, if not write it
 if not mouser_api_key:
@@ -41,8 +39,7 @@ if not mouser_api_key:
   with open('config.ini', 'w') as configfile:
     config.write(configfile)
   print("API Key saved!")
-else:
-  print("Done.")
+print("Done")
 
 # Get reference dictionary of parts
 print("\nLoading part reference dictionary...")
@@ -171,13 +168,17 @@ for ycd in YCDs:
       pkg = ''
       for each in data:
         if not pkg and each['attribute']['name'] == 'Case/Package':
-          pkg = each['display_value'].replace('-',' ')
+          pkg = each['display_value']
         if each['attribute']['name'] == 'Case Code (Imperial)':
-          pkg = each['display_value'].replace('-',' ')
+          pkg = each['display_value']
       
       # Get package from Mouser if unable to find on Octopart
       if not pkg:
         pkg = mouser.get_part_specs(pn)
+      
+      # Strip - from package name
+      if pkg:
+        pkg = re.sub('-', '', pkg)
       
       # Manually input package name if unable to find one on Octopart or Mouser
       if not pkg:
@@ -198,6 +199,8 @@ for ycd in YCDs:
       # Save new part to reference dictionary
       ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
+      print(pn)
+      print(pkg)
       print("\n" + pn + " added to part reference dictionary as " + pkg)
     
     # Check for DNI and add it if it isn't there
