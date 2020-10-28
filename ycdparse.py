@@ -199,8 +199,6 @@ for ycd in YCDs:
       # Save new part to reference dictionary
       ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
-      print(pn)
-      print(pkg)
       print("\n" + pn + " added to part reference dictionary as " + pkg)
     
     # Check for DNI and add it if it isn't there
