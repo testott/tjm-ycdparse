@@ -207,11 +207,15 @@ for ycd in YCDs:
       
       # Check if 4 digit case code, then apply C, R, L to the end if the reference designator matches
       if re.search('^\d\d\d\d$', pkg):
-        if row['RefID.'].lower().startswith(('r','c','l','fb')):
-          if row['RefID.'].lower().startswith('fb'):
-            pkg = pkg + 'L'
+        if row['RefID.'].lower().startswith(('r','c','l')):
+          pkg = pkg + row['RefID.'][0]
+        if row['RefID.'].lower().startswith('fb'):
+          pkg = pkg + 'L'
+        if row['RefID.'].lower().startswith('d'):
+          if re.search(r'^led'[bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
+            pkg = pkg + 'LED'
           else:
-            pkg = pkg + row['RefID.'][0]
+            pkg = pkg + 'D'
       
       # Save new part to reference dictionary
       ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
