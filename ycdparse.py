@@ -34,7 +34,7 @@ if not octopart_api_key:
   
 # Check if Mouser API key exists, if not write it
 if not mouser_api_key:
-  mouser_api_key = input("\nCouldn't find Mouser API key! Please input your Octopart API key and hit enter.\n:")
+  mouser_api_key = input("\nCouldn't find Mouser API key! Please input your Mouser API key and hit enter.\n:")
   config['API Keys']['mouser'] = mouser_api_key
   with open('config.ini', 'w') as configfile:
     config.write(configfile)
