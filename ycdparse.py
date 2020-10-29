@@ -189,9 +189,9 @@ for ycd in YCDs:
         while not answer:
           print("\nFound package name: " + pkg + " for " + pn)
           answer = input("\nDoes this look correct?\n(y/n):")
-          if y in answer.lower():
+          if 'y' in answer.lower():
             break
-          elif n in answer.lower():
+          elif 'n' in answer.lower():
             pkg = ''
           else:
             answer = ''
@@ -212,7 +212,7 @@ for ycd in YCDs:
         if row['RefID.'].lower().startswith('fb'):
           pkg = pkg + 'L'
         if row['RefID.'].lower().startswith('d'):
-          if re.search(r'^led', [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
+          if re.search(r'^led', bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
             pkg = pkg + 'LED'
           else:
             pkg = pkg + 'D'
