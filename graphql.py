@@ -58,11 +58,10 @@ class GraphQLClient:
     '''
 
     resp = self.execute(query, {'pn': pn})
-    if not json.loads(resp):
-      return None
-    else:
+    try:
       return json.loads(resp)['data']['search']['results'][0]['part']['specs']
-
+    except:
+      return None
 
 def match_mpns(client, mpns):
   dsl = '''
