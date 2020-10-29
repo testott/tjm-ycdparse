@@ -212,7 +212,7 @@ for ycd in YCDs:
         if row['RefID.'].lower().startswith('fb'):
           pkg = pkg + 'L'
         if row['RefID.'].lower().startswith('d'):
-          if re.search(r'^led'[bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
+          if re.search(r'^led', [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
             pkg = pkg + 'LED'
           else:
             pkg = pkg + 'D'
