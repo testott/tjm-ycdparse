@@ -61,7 +61,7 @@ class GraphQLClient:
     try:
       return json.loads(resp)['data']['search']['results'][0]['part']['specs']
     except:
-      return None
+      raise Exception('Unable to find part on Octopart')
 
 def match_mpns(client, mpns):
   dsl = '''
