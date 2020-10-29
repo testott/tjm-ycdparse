@@ -184,7 +184,7 @@ for ycd in YCDs:
         pkg = re.sub('-', '', pkg)
       
       # Manual check for strange package names
-      if not re.search(r'\d', pkg):
+      if pkg and not re.search(r'\d', pkg):
         answer = ''
         while not answer:
           print("\nFound package name: " + pkg + " for " + pn)
