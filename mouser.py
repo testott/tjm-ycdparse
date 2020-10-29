@@ -19,7 +19,7 @@ class MouserClient:
     resp = requests.post(self.endpoint, headers = {'accept': 'application/json', 'Content-Type': 'application/json'}, json = query)
     if resp.status_code != 200:
       print('\nMouser failed to respond! Trying one more time...')
-      time.sleep(5)
+      time.sleep(15)
       resp = requests.post(self.endpoint, headers = {'accept': 'application/json', 'Content-Type': 'application/json'}, json = query)
       if resp.status_code != 200:
         print('\nMouser failed to respond again. Skipping...')
