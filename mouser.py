@@ -17,9 +17,11 @@ class MouserClient:
 
     resp = requests.post(self.endpoint, headers = {'accept': 'application/json', 'Content-Type': 'application/json'}, json = query)
     if resp.status_code != 200:
-      raise Exception('POST /mouser/ {}'.format(resp.status_code))
-    
-    pnurl = resp.json()['SearchResults']['Parts'][0]['ProductDetailUrl']
+      return None
+    try:
+      pnurl = resp.json()['SearchResults']['Parts'][0]['ProductDetailUrl']
+    except:
+      return None
     page = requests.get(pnurl, headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',})
     soup = BeautifulSoup(page.content, 'html.parser')
     specs_table = soup.find('table', class_ = 'specs-table')
