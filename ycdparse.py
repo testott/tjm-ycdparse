@@ -147,7 +147,7 @@ print('\nBOM parse complete!')
 print('\nParsing YCD files...')
 
 for ycd in YCDs:
-  ycd_df = pd.read_csv(ycd, delim_whitespace=True, header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
+  ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
   # Ensure part numbers and packages are set as strings
   ycd_df['P/N'] = ycd_df['P/N'].astype(str)
   ycd_df['Pkg'] = ycd_df['Pkg'].astype(str)
