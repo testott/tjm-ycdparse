@@ -110,7 +110,7 @@ bom_df = pd.read_excel(BOM,header = head_row-1).dropna()
 # Find relevant columns to put into YCD files
 partnum_col = None
 try:
-  partnum_col = list(bom_df.columns.str.contains(r'.*part.*num.*', case = False, regex = True)).index(True)
+  partnum_col = list(bom_df.columns.str.contains(r'.*part.*num.*|.*p/n.*', case = False, regex = True)).index(True)
 except:
   while not partnum_col:
     try:
