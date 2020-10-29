@@ -1,5 +1,6 @@
 import re
 import requests
+import time
 
 from bs4 import BeautifulSoup
 
@@ -17,7 +18,12 @@ class MouserClient:
 
     resp = requests.post(self.endpoint, headers = {'accept': 'application/json', 'Content-Type': 'application/json'}, json = query)
     if resp.status_code != 200:
-      return None
+      print('\nMouser failed to respond! Trying one more time...')
+      time.sleep(5)
+      resp = requests.post(self.endpoint, headers = {'accept': 'application/json', 'Content-Type': 'application/json'}, json = query)
+      if resp.status_code != 200:
+        print('\nMouser failed to respond again. Skipping...')
+        return None
     try:
       pnurl = resp.json()['SearchResults']['Parts'][0]['ProductDetailUrl']
     except:
