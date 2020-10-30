@@ -1,6 +1,7 @@
 from graphql import GraphQLClient
 from mouser import MouserClient
 from pathlib import Path
+from timeit import default_timer as timer
 
 import configparser
 import pandas as pd
@@ -104,6 +105,9 @@ while not head_row:
   except:
     print("\nThat was an invalid number! Please input the row number and try again.\n")
 
+# Set start time
+start = timer()
+
 # Parse BOM with pandas
 print("\nParsing BOM...")
 bom_df = pd.read_excel(BOM,header = head_row-1).dropna()
@@ -147,6 +151,9 @@ print('\nBOM parse complete!')
 # Parse YCD files with pandas and crosscheck all part numbers and add them to reference dictionary
 print('\nParsing YCD files...')
 
+# Set last mouser check to current time - 10
+last_mouser_check = timer() - 10
+
 for ycd in YCDs:
   ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
   # Ensure part numbers and packages are set as strings
@@ -180,7 +187,9 @@ for ycd in YCDs:
           
       # Get package from Mouser if not found on Octopart, or if package name is strange
       if not pkg or not re.search(r'\d', pkg):
-        time.sleep(10)
+        if int(timer() - last_mouser_check) < 10:
+          time.sleep(int(timer() - last_mouser_check))
+        last_mouser_check = timer()
         pkg = mouser.get_part_specs(pn)
       
       # Strip - from package name
@@ -254,4 +263,6 @@ for ycd in YCDs:
   print("\nDone.")
 
 
-input("\n\nProgram complete! Press ENTER to exit.")
+print("\n\nProgram complete!")
+print("\nTime elapsed: " str(int(timer()-start)) + " seconds.")
+input("\nPress ENTER to exit.")
