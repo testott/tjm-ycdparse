@@ -8,10 +8,10 @@ import pickle
 import re
 import time
 
-print("\n\nWelcome to YCD Parser.\n")
+print("#"*80 + "\n" * 3 + "Welcome to YCD Parser.\n")
 
 # Get API Keys from config file
-print("\nLoading config...")
+print("\n" * 4 + "Loading config...")
 config = configparser.ConfigParser()
 
 # Check if config.ini exists, if not write it
