@@ -6,6 +6,7 @@ import configparser
 import pandas as pd
 import pickle
 import re
+import time
 
 print("\n\nWelcome to YCD Parser.\n")
 
@@ -179,6 +180,7 @@ for ycd in YCDs:
           
       # Get package from Mouser if not found on Octopart, or if package name is strange
       if not pkg or not re.search(r'\d', pkg):
+        time.sleep(10)
         pkg = mouser.get_part_specs(pn)
       
       # Strip - from package name
