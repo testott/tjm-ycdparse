@@ -254,4 +254,4 @@ for ycd in YCDs:
   print("\nDone.")
 
 
-print("\n\nProgram complete!")
+input("\n\nProgram complete! Press ENTER to exit.")
