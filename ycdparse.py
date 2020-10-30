@@ -162,23 +162,24 @@ for ycd in YCDs:
     if pn not in ref_dict and pn.lower() not in ['dni', 'dnp']:
       print("\nLooking up new part number: " + pn)
       desc = bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0]
-      # Get package from Mouser
-      pkg = mouser.get_part_specs(pn)
-        
-      # Lookup on Octopart if unable to find on Mouser
-      if not pkg:
-        try:
-          data = gql.get_part_specs(pn)
-        
-          # Get package, prioritizing Imperial Case Codes over Metric, if it exists
-          pkg = ''
-          for each in data:
-            if not pkg and each['attribute']['name'] == 'Case/Package':
-              pkg = each['display_value']
-            if each['attribute']['name'] == 'Case Code (Imperial)':
-              pkg = each['display_value']
-        except:
-          pkg = ''
+      
+      # Lookup on Octopart
+      try:
+        data = gql.get_part_specs(pn)
+      
+        # Get package, prioritizing Imperial Case Codes over Metric, if it exists
+        pkg = ''
+        for each in data:
+          if not pkg and each['attribute']['name'] == 'Case/Package':
+            pkg = each['display_value']
+          if each['attribute']['name'] == 'Case Code (Imperial)':
+            pkg = each['display_value']
+      except:
+        pkg = ''
+          
+      # Get package from Mouser if not found on Octopart, or if package name is strange
+      if not pkg or not re.search(r'\d', pkg):
+        pkg = mouser.get_part_specs(pn)
       
       # Strip - from package name
       if pkg:
