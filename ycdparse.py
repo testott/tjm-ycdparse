@@ -161,6 +161,7 @@ for ycd in YCDs:
     # Check if part number is in reference dictionary
     if pn not in ref_dict and pn.lower() not in ['dni', 'dnp']:
       print("\nLooking up new part number: " + pn)
+      desc = bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0]
       # Get package from Mouser
       pkg = mouser.get_part_specs(pn)
         
@@ -207,18 +208,30 @@ for ycd in YCDs:
       
       # Check if 4 digit case code, then apply C, R, L to the end if the reference designator matches
       if re.search('^\d\d\d\d$', pkg):
-        if row['RefID.'].lower().startswith(('r','c','l')):
+        # Capacitors, Resistors, and inductors
+        if row['RefID.'].lower().startswith(('c', 'r', 'l')):
           pkg = pkg + row['RefID.'][0]
+        # Ferrite bead inductors
         if row['RefID.'].lower().startswith('fb'):
           pkg = pkg + 'L'
+        # Diodes
         if row['RefID.'].lower().startswith('d'):
-          if re.search(r'^led', bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0].lower()):
+          if re.search(r'LED', desc):
             pkg = pkg + 'LED'
           else:
-            pkg = pkg + 'D'
+            answer = ''
+            while not answer:
+              answer = input("\nIs " + pn + " an LED?\n(y/n):")
+              if 'y' in answer.lower():
+                pkg = pkg + 'LED'
+              elif 'n' in answer.lower():
+                pkg = pkg + 'D'
+              else:
+                answer = ''
+                print("\nPlease type yes (y) or no (n)!")
       
       # Save new part to reference dictionary
-      ref_dict[pn] = [bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0],pkg]
+      ref_dict[pn] = [desc,pkg]
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
       print("\n" + pn + " added to part reference dictionary as " + pkg)
     
