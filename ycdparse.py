@@ -264,5 +264,5 @@ for ycd in YCDs:
 
 
 print("\n\nProgram complete!")
-print("\nTime elapsed: " str(int(timer()-start)) + " seconds.")
+print("\nTime elapsed: " + str(int(timer()-start)) + " seconds.")
 input("\nPress ENTER to exit.")
