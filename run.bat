@@ -1,1 +1,1 @@
-python ycdparse.py
+cmd /K python ycdparse.py

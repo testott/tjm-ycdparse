@@ -110,7 +110,7 @@ start = timer()
 
 # Parse BOM with pandas
 print("\nParsing BOM...")
-bom_df = pd.read_excel(BOM,header = head_row-1).dropna()
+bom_df = pd.read_excel(BOM, header = head_row-1, encoding = 'utf-8')
 
 # Find relevant columns to put into YCD files
 partnum_col = None
@@ -154,8 +154,29 @@ print('\nParsing YCD files...')
 # Set last mouser check to current time - 10
 last_mouser_check = timer() - 10
 
+
 for ycd in YCDs:
-  ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
+  # Remove double spaces in description column of ycd files
+  new_ycd = []
+  with open(str(ycd), 'r+') as f:
+    i = 0
+    for line in f:
+      if '[PartListEnd]' in line:
+        break
+      if i > 16:
+        ycd_description = re.split(r'\s{2,}',line,6)[6]
+        new_description = re.sub(r'\s{2,}', ' ', ycd_description)
+        new_ycd.append(line.replace(ycd_description, new_description))
+      else:
+        new_ycd.append(line)
+      i += 1
+      
+  with open(str(ycd), 'w+') as f:
+    for line in new_ycd:
+      f.write(line)
+  
+  ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python', encoding = 'utf-8')
+  quit()
   # Ensure part numbers and packages are set as strings
   ycd_df['P/N'] = ycd_df['P/N'].astype(str)
   ycd_df['Pkg'] = ycd_df['Pkg'].astype(str)
@@ -168,7 +189,6 @@ for ycd in YCDs:
     
     # Check if part number is in reference dictionary
     if pn not in ref_dict and pn.lower() not in ['dni', 'dnp']:
-      print("\nLooking up new part number: " + pn)
       desc = bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0]
       
       # Lookup on Octopart
@@ -253,7 +273,8 @@ for ycd in YCDs:
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
     
     # Set new values to row
-    ycd_df.set_value(i,'Extension', ref_dict[pn][0])
+    if ycd_df.iloc[i]['Extension'] == '----':
+      ycd_df.set_value(i,'Extension', ref_dict[pn][0])
     ycd_df.set_value(i,'Pkg', ref_dict[pn][1])
   
   # Write new YCD as tsv file for use with YesTech CAD Utility
