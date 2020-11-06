@@ -110,7 +110,7 @@ start = timer()
 
 # Parse BOM with pandas
 print("\nParsing BOM...")
-bom_df = pd.read_excel(BOM, header = head_row-1, encoding = 'utf-8')
+bom_df = pd.read_excel(BOM, header = head_row-1)
 
 # Find relevant columns to put into YCD files
 partnum_col = None
@@ -175,13 +175,13 @@ for ycd in YCDs:
     for line in new_ycd:
       f.write(line)
   
-  ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python', encoding = 'utf-8')
-  quit()
+  ycd_df = pd.read_csv(ycd, delimiter = r'\s{2,}', header = 0, skiprows = range(0,17), skipfooter = 1, engine = 'python')
   # Ensure part numbers and packages are set as strings
   ycd_df['P/N'] = ycd_df['P/N'].astype(str)
   ycd_df['Pkg'] = ycd_df['Pkg'].astype(str)
   # Sort by reference designator
   ycd_df = ycd_df.sort_values(by = ['RefID.'])
+  ycd_df = ycd_df.reset_index(drop=True)
   
   # Iterate over each row of YCD file
   for i, row in ycd_df.iterrows():
@@ -273,7 +273,7 @@ for ycd in YCDs:
       pickle.dump(ref_dict, open("ref_dict.p", "wb"))
     
     # Set new values to row
-    if ycd_df.iloc[i]['Extension'] == '----':
+    if '----' in ycd_df.iloc[i]['Extension']:
       ycd_df.set_value(i,'Extension', ref_dict[pn][0])
     ycd_df.set_value(i,'Pkg', ref_dict[pn][1])
   
