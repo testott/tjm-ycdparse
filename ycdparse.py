@@ -162,6 +162,7 @@ for ycd in YCDs:
     i = 0
     for line in f:
       if '[PartListEnd]' in line:
+        new_ycd.append(line)
         break
       if i > 16:
         ycd_description = re.split(r'\s{2,}',line,6)[6]
