@@ -190,8 +190,10 @@ for ycd in YCDs:
     
     # Check if part number is in reference dictionary
     if pn not in ref_dict and pn.lower() not in ['dni', 'dnp']:
+      print('\nLooking up new part:' +pn)
       desc = bom_df.loc[bom_df[partnum_col] == pn,desc_col].iloc[0]
       
+      octopart = False
       # Lookup on Octopart
       try:
         data = gql.get_part_specs(pn)
@@ -205,6 +207,10 @@ for ycd in YCDs:
             pkg = each['display_value']
       except:
         pkg = ''
+        
+      if pkg:
+        print('\nFound on Octopart.')
+        octopart = True
           
       # Get package from Mouser if not found on Octopart, or if package name is strange
       if not pkg or not re.search(r'\d', pkg):
@@ -212,6 +218,9 @@ for ycd in YCDs:
           time.sleep(int(timer() - last_mouser_check))
         last_mouser_check = timer()
         pkg = mouser.get_part_specs(pn)
+        
+      if pkg and not octopart:
+        print('\nFound on Mouser.')
       
       # Strip - from package name
       if pkg:
@@ -245,7 +254,7 @@ for ycd in YCDs:
         if row['RefID.'].lower().startswith(('c', 'r', 'l')):
           pkg = pkg + row['RefID.'][0]
         # Ferrite bead inductors
-        if row['RefID.'].lower().startswith('fb'):
+        if row['RefID.'].lower().startswith('fb') or row['RefID.'].lower().startswith('e'):
           pkg = pkg + 'L'
         # Diodes
         if row['RefID.'].lower().startswith('d'):
